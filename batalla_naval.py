@@ -2,10 +2,6 @@ import streamlit as st
 import random
 import time
 
-# Ajuste para que el reloj se actualice automaticamente
-st_autorefresh = st.components.v1.html
-REFRESCO_SEGUNDOS = 1
-
 # Configuracion general del juego
 TIEMPO_LIMITE = 300
 OBJETIVO_HUNDIR = 10
@@ -31,15 +27,6 @@ if "juego_terminado" not in st.session_state:
 # Calcular tiempo transcurrido y tiempo restante
 tiempo_transcurrido = time.time() - st.session_state.tiempo_inicio
 tiempo_restante = TIEMPO_LIMITE - tiempo_transcurrido
-
-# Forzar refresco automatico cada 1 segundo para que el reloj avance solo
-st_autorefresh(f"""
-<script>
-setInterval(function(){{
-    window.location.reload();
-}}, {REFRESCO_SEGUNDOS * 1000});
-</script>
-""", height=0, width=0)
 
 # Encabezado del juego
 st.title("Batalla Naval: Tu Acorazado")
