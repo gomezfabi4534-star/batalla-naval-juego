@@ -1,0 +1,89 @@
+import streamlit as st
+import random
+import time
+
+# Ajuste para que el reloj se actualice automaticamente
+st_autorefresh = st.components.v1.html
+REFRESCO_SEGUNDOS = 1
+
+# Configuracion general del juego
+TIEMPO_LIMITE = 300
+OBJETIVO_HUNDIR = 10
+TAMANO = 8
+
+# Cargar valores en la memoria de la sesion
+if "barcos_enemigos" not in st.session_state:
+    st.session_state.barcos_enemigos = []
+    while len(st.session_state.barcos_enemigos) < OBJETIVO_HUNDIR:
+        pos = (random.randint(0, TAMANO - 1), random.randint(0, TAMANO - 1))
+        if pos not in st.session_state.barcos_enemigos:
+            st.session_state.barcos_enemigos.append(pos)
+
+if "hundidos" not in st.session_state:
+    st.session_state.hundidos = 0
+if "disparos_realizados" not in st.session_state:
+    st.session_state.disparos_realizados = []
+if "tiempo_inicio" not in st.session_state:
+    st.session_state.tiempo_inicio = time.time()
+if "juego_terminado" not in st.session_state:
+    st.session_state.juego_terminado = False
+
+# Calcular tiempo transcurrido y tiempo restante
+tiempo_transcurrido = time.time() - st.session_state.tiempo_inicio
+tiempo_restante = TIEMPO_LIMITE - tiempo_transcurrido
+
+# Forzar refresco automatico cada 1 segundo para que el reloj avance solo
+st_autorefresh(f"""
+<script>
+setInterval(function(){{
+    window.location.reload();
+}}, {REFRESCO_SEGUNDOS * 1000});
+</script>
+""", height=0, width=0)
+
+# Encabezado del juego
+st.title("Batalla Naval: Tu Acorazado")
+st.subheader(f"Tiempo restante: {max(0, round(tiempo_restante,1))} segundos | Barcos hundidos: {st.session_state.hundidos}/{OBJETIVO_HUNDIR}")
+
+# Condiciones de fin de partida
+if tiempo_restante <= 0:
+    st.session_state.juego_terminado = True
+    st.error("SE ACABO EL TIEMPO, PERDISTE LA BATALLA")
+elif st.session_state.hundidos >= OBJETIVO_HUNDIR:
+    st.session_state.juego_terminado = True
+    st.success("VICTORIA, HUNDISTE LOS 10 BARCOS ENEMIGOS")
+
+# Tablero de botones para disparar
+if not st.session_state.juego_terminado:
+    st.write("Selecciona la casilla donde quieres disparar con tu acorazado")
+    for fila in range(TAMANO):
+        cols = st.columns(TAMANO)
+        for col in range(TAMANO):
+            with cols[col]:
+                if (fila,col) in st.session_state.disparos_realizados:
+                    if (fila,col) in st.session_state.barcos_enemigos:
+                        st.button("IMPACTO", disabled=True, key=f"{fila}_{col}")
+                    else:
+                        st.button("AGUA", disabled=True, key=f"{fila}_{col}")
+                else:
+                    if st.button("VACIO", key=f"{fila}_{col}"):
+                        st.session_state.disparos_realizados.append((fila,col))
+                        if (fila,col) in st.session_state.barcos_enemigos:
+                            st.session_state.barcos_enemigos.remove((fila,col))
+                            st.session_state.hundidos += 1
+                            st.toast("IMPACTO, HUNDISTE UN BARCO ENEMIGO")
+                        else:
+                            st.toast("AGUA, FALLASTE EL DISPARO")
+
+# Boton para reiniciar la partida
+if st.button("Reiniciar Juego"):
+    st.session_state.barcos_enemigos = []
+    while len(st.session_state.barcos_enemigos) < OBJETIVO_HUNDIR:
+        pos = (random.randint(0, TAMANO - 1), random.randint(0, TAMANO - 1))
+        if pos not in st.session_state.barcos_enemigos:
+            st.session_state.barcos_enemigos.append(pos)
+    st.session_state.hundidos = 0
+    st.session_state.disparos_realizados = []
+    st.session_state.tiempo_inicio = time.time()
+    st.session_state.juego_terminado = False
+    st.rerun()
